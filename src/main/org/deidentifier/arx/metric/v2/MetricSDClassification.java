@@ -24,6 +24,7 @@ import java.util.List;
 import org.deidentifier.arx.ARXConfiguration;
 import org.deidentifier.arx.DataDefinition;
 import org.deidentifier.arx.certificate.elements.ElementData;
+import org.deidentifier.arx.criteria.EDDifferentialPrivacy;
 import org.deidentifier.arx.framework.check.distribution.Distribution;
 import org.deidentifier.arx.framework.check.groupify.HashGroupify;
 import org.deidentifier.arx.framework.check.groupify.HashGroupifyEntry;
@@ -55,6 +56,9 @@ public class MetricSDClassification extends AbstractMetricSingleDimensional {
     private double            penaltyInfrequentResponse    = 1d;
     /** Penalty */
     private double            penaltyNoMajorityResponse    = 1d;
+
+    /** Minimal size of equivalence classes enforced by the differential privacy model */
+    private double            k;
 
     /**
      * Creates a new instance.
@@ -136,9 +140,69 @@ public class MetricSDClassification extends AbstractMetricSingleDimensional {
     public double getPenaltySuppressed() {
         return penaltySuppressed;
     }
+    
+    @Override
+    public ILScore getScore(final Transformation node, final HashGroupify groupify) {
+        
+//        Map<RecordWrapper, Map<Integer, Integer>> featuresToClassToCount = new HashMap<>();
+//
+//        for (HashGroupifyEntry entry = g.getFirstEquivalenceClass(); entry != null; entry = entry.nextOrdered) {
+//
+//            if (!entry.isNotOutlier) continue;
+//
+//            int[] record = entry.key;
+//            int count = entry.count;
+//            int classValue = record[classColumnIndex];
+//
+//            int[] features = new int[record.length - 1];
+//            boolean featuresSuppressed = true;
+//            for (int i = 0; i < record.length; i++) {
+//                if (i < classColumnIndex) {
+//                    features[i] = record[i];
+//                    if (record[i] != rootValues[i]) featuresSuppressed = false;
+//                } else if (i > classColumnIndex) {
+//                    features[i - 1] = record[i];
+//                    if (record[i] != rootValues[i]) featuresSuppressed = false;
+//                }
+//            }
+//
+//            if (featuresSuppressed) continue;
+//
+//            RecordWrapper featuresWrapped = new RecordWrapper(features);
+//
+//            Map<Integer, Integer> classToCount = featuresToClassToCount.get(featuresWrapped);
+//            if (classToCount == null) {
+//                classToCount = new HashMap<>();
+//                classToCount.put(classValue, count);
+//            } else {
+//                int classCount = classToCount.containsKey(classValue) ? classToCount.get(classValue) + count : count;
+//                classToCount.put(classValue, classCount);
+//            }
+//            featuresToClassToCount.put(featuresWrapped, classToCount);
+//        }
+//
+//        int unpenalizedCount = 0;
+//        for (Map<Integer, Integer> classToCount : featuresToClassToCount.values()) {
+//            int maxCount = 0;
+//            for (int count : classToCount.values()) {
+//                maxCount = Math.max(maxCount, count);
+//            }
+//            unpenalizedCount += maxCount;
+//        }
+//        
+//        // Return score
+//        return new ILScore((double)unpenalizedCount / (double)k);
+        
+        throw new RuntimeException("Work in progress");
+    }
 
     @Override
     public boolean isGSFactorSupported() {
+        return true;
+    }
+    
+    @Override
+    public boolean isScoreFunctionSupported() {
         return true;
     }
 
@@ -301,5 +365,11 @@ public class MetricSDClassification extends AbstractMetricSingleDimensional {
         penaltySuppressed            = super.getSuppressionFactor();
         penaltyInfrequentResponse    = super.getGeneralizationFactor();
         penaltyNoMajorityResponse    = super.getGeneralizationSuppressionFactor();
+        
+        // Store minimal size of equivalence classes
+        if (config.isPrivacyModelSpecified(EDDifferentialPrivacy.class)) {
+            EDDifferentialPrivacy dpCriterion = config.getPrivacyModel(EDDifferentialPrivacy.class);
+            k = (double)dpCriterion.getMinimalClassSize();
+        }
     }
 }
