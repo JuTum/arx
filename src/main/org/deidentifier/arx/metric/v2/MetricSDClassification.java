@@ -91,6 +91,9 @@ public class MetricSDClassification extends AbstractMetricSingleDimensional {
     /** Minimal size of equivalence classes enforced by the differential privacy model */
     private double            k;
 
+    /** The root values of all generalization hierarchies or -1 if no single root value exists */
+    private int[]             rootValues;
+
     /**
      * Creates a new instance.
      */
@@ -176,55 +179,64 @@ public class MetricSDClassification extends AbstractMetricSingleDimensional {
     public ILScore getScore(final Transformation node, final HashGroupify groupify) {
         
         // Prepare
-        double score = 0d;
-//        HashGroupifyEntry m = groupify.getFirstEquivalenceClass();
-//        Map<RecordWrapper, Map<Integer, Integer>> featuresToClassToCount = new HashMap<>();
+        Map<RecordWrapper, Map<Integer, Integer>> featuresToClassToCount = new HashMap<>();
 
-        // TODO implement
-        
-//        for (HashGroupifyEntry entry = groupify.getFirstEquivalenceClass(); entry != null; entry = entry.nextOrdered) {
-//
-//            if (!entry.isNotOutlier) continue;
-//
-//            int[] record = entry.key;
-//            int count = entry.count;
-//            int classValue = record[classColumnIndex];
-//
-//            int[] features = new int[record.length - 1];
-//            boolean featuresSuppressed = true;
-//            for (int i = 0; i < record.length; i++) {
-//                if (i < classColumnIndex) {
-//                    features[i] = record[i];
-//                    if (record[i] != rootValues[i]) featuresSuppressed = false;
-//                } else if (i > classColumnIndex) {
-//                    features[i - 1] = record[i];
-//                    if (record[i] != rootValues[i]) featuresSuppressed = false;
-//                }
-//            }
-//
-//            if (featuresSuppressed) continue;
-//
-//            RecordWrapper featuresWrapped = new RecordWrapper(features);
-//
-//            Map<Integer, Integer> classToCount = featuresToClassToCount.get(featuresWrapped);
-//            if (classToCount == null) {
-//                classToCount = new HashMap<>();
-//                classToCount.put(classValue, count);
-//            } else {
-//                int classCount = classToCount.containsKey(classValue) ? classToCount.get(classValue) + count : count;
-//                classToCount.put(classValue, classCount);
-//            }
-//            featuresToClassToCount.put(featuresWrapped, classToCount);
-//        }
-//
-//        int unpenalizedCount = 0;
-//        for (Map<Integer, Integer> classToCount : featuresToClassToCount.values()) {
-//            int maxCount = 0;
-//            for (int count : classToCount.values()) {
-//                maxCount = Math.max(maxCount, count);
-//            }
-//            unpenalizedCount += maxCount;
-//        }
+        // Setup data structures
+        HashGroupifyEntry m = groupify.getFirstEquivalenceClass();
+        while (m != null) {
+            m.read();
+            
+            if (!m.isNotOutlier) continue;
+            
+            int[] features = new int[rootValues.length - responseVariablesNotAnalyzed.length];
+            int featuresIndex = 0;
+            int[] responseValues = new int[responseVariablesNotAnalyzed.length];
+            int responseIndex = 0;
+            int nextResponseIndex = 0;
+            boolean featuresSuppressed = true;
+            
+            for (int i=0; i<rootValues.length; ++i) {
+                int value = m.next();
+                if (i == responseVariablesNotAnalyzed[nextResponseIndex]) {
+                    responseValues[responseIndex] = value;
+                    responseIndex++;
+                    nextResponseIndex++;
+                } else {
+                    features[featuresIndex] = value;
+                    featuresIndex++;
+                    if(rootValues[i] == -1 || value != rootValues[i]) {
+                        featuresSuppressed = false;
+                    }
+                }
+            }
+            
+            if (featuresSuppressed) continue;
+
+            RecordWrapper featuresWrapped = new RecordWrapper(features);
+
+            // TODO properly handle several response values
+            Map<Integer, Integer> classToCount = featuresToClassToCount.get(featuresWrapped);
+            if (classToCount == null) {
+                classToCount = new HashMap<>();
+                classToCount.put(responseValues[0], m.count);
+            } else {
+                int classCount = classToCount.containsKey(responseValues[0]) ? classToCount.get(responseValues[0]) + m.count : m.count;
+                classToCount.put(responseValues[0], classCount);
+            }
+            featuresToClassToCount.put(featuresWrapped, classToCount);
+            
+            m = m.nextOrdered;
+        }
+
+        // Calculate score
+        double score = 0d;
+        for (Map<Integer, Integer> classToCount : featuresToClassToCount.values()) {
+            int maxCount = 0;
+            for (int count : classToCount.values()) {
+                maxCount = Math.max(maxCount, count);
+            }
+            score += maxCount;
+        }
 
         // Return
         return new ILScore(score / (double)k);
@@ -409,6 +421,21 @@ public class MetricSDClassification extends AbstractMetricSingleDimensional {
             // Store minimal size of equivalence classes
             EDDifferentialPrivacy dpCriterion = config.getPrivacyModel(EDDifferentialPrivacy.class);
             k = (double)dpCriterion.getMinimalClassSize();
+            
+            // Store root values of generalization hierarchies or -1 if no single root value exists
+            rootValues = new int[hierarchies.length];
+            for (int i = 0; i < hierarchies.length; i++) {
+                int rootValue = -1;
+                for (int[] row : hierarchies[i].getArray()) {
+                    if (rootValue == -1) {
+                        rootValue = row[row.length-1];
+                    } else if (row[row.length-1] != rootValue) {
+                        rootValue = -1;
+                        break;
+                    }
+                }
+                rootValues[i] = rootValue;
+            }
         }
     }
 }
