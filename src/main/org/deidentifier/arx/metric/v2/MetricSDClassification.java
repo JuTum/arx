@@ -18,8 +18,11 @@
 package org.deidentifier.arx.metric.v2;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.deidentifier.arx.ARXConfiguration;
 import org.deidentifier.arx.DataDefinition;
@@ -44,11 +47,39 @@ public class MetricSDClassification extends AbstractMetricSingleDimensional {
 
     /** SVUID. */
     private static final long serialVersionUID             = -7940144844158472876L;
+    
+    /** Record wrapper */
+    class RecordWrapper {
+
+        /** Field*/
+        private final int[] tuple;
+        /** Field*/
+        private final int hash;
+
+        /**
+         * Constructor
+         * @param tuple
+         */
+        public RecordWrapper(int[] tuple) {
+            this.tuple = tuple;
+            this.hash = Arrays.hashCode(tuple);
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            return Arrays.equals(this.tuple, ((RecordWrapper)other).tuple);
+        }
+
+        @Override
+        public int hashCode() {
+            return hash;
+        }
+    }
 
     /** Indices of response variables in distributions */
     private int[]             responseVariables            = null;
-    /** Number of response variables in quasi-identifiers */
-    private int               responseVariablesNotAnalyzed = 0;
+    /** Indices of response variables in quasi-identifiers */
+    private int[]             responseVariablesNotAnalyzed = null;
 
     /** Penalty */
     private double            penaltySuppressed            = 1d;
@@ -87,7 +118,7 @@ public class MetricSDClassification extends AbstractMetricSingleDimensional {
             
             // TODO: This is probably crap. Non-analyzed RVs need to be treated differently.
             // Non-analyzed response variables are only penalized if they are suppressed
-            double max = rows * responseVariablesNotAnalyzed * penaltySuppressed;
+            double max = rows * responseVariablesNotAnalyzed.length * penaltySuppressed;
             
             // Use maximal penalty for other response variables
             double maxPenalty = Math.max(penaltySuppressed, Math.max(penaltyInfrequentResponse, penaltyNoMajorityResponse));
@@ -144,9 +175,14 @@ public class MetricSDClassification extends AbstractMetricSingleDimensional {
     @Override
     public ILScore getScore(final Transformation node, final HashGroupify groupify) {
         
+        // Prepare
+        double score = 0d;
+//        HashGroupifyEntry m = groupify.getFirstEquivalenceClass();
 //        Map<RecordWrapper, Map<Integer, Integer>> featuresToClassToCount = new HashMap<>();
-//
-//        for (HashGroupifyEntry entry = g.getFirstEquivalenceClass(); entry != null; entry = entry.nextOrdered) {
+
+        // TODO implement
+        
+//        for (HashGroupifyEntry entry = groupify.getFirstEquivalenceClass(); entry != null; entry = entry.nextOrdered) {
 //
 //            if (!entry.isNotOutlier) continue;
 //
@@ -189,11 +225,9 @@ public class MetricSDClassification extends AbstractMetricSingleDimensional {
 //            }
 //            unpenalizedCount += maxCount;
 //        }
-//        
-//        // Return score
-//        return new ILScore((double)unpenalizedCount / (double)k);
-        
-        throw new RuntimeException("Work in progress");
+
+        // Return
+        return new ILScore(score / (double)k);
     }
 
     @Override
@@ -235,7 +269,7 @@ public class MetricSDClassification extends AbstractMetricSingleDimensional {
         if (!entry.isNotOutlier) {
             
             // According penalty for all records and response variables in this class
-            result += entry.count * (responseVariablesNotAnalyzed + responseVariables.length) * penaltySuppressed;
+            result += entry.count * (responseVariablesNotAnalyzed.length + responseVariables.length) * penaltySuppressed;
             
         // Not suppressed
         } else {
@@ -344,10 +378,13 @@ public class MetricSDClassification extends AbstractMetricSingleDimensional {
         
         // Extract indices of response variables
         List<Integer> indices = new ArrayList<>();
+        List<Integer> indicesNotAnalyzed = new ArrayList<>();
         for (String variable : definition.getResponseVariables()){
             int index = manager.getDataAnalyzed().getIndexOf(variable);
             if (index != -1) {
                 indices.add(index);
+            } else {
+                indicesNotAnalyzed.add(index);
             }
         }
         
@@ -357,17 +394,19 @@ public class MetricSDClassification extends AbstractMetricSingleDimensional {
         for (int i = 0; i < indices.size(); i++) {
             responseVariables[i] = indices.get(i);
         }
-        
-        // TODO: This is probably crap. Non-analyzed RVs need to be treated differently.
-        this.responseVariablesNotAnalyzed = definition.getResponseVariables().size() - responseVariables.length;
+        Collections.sort(indicesNotAnalyzed);
+        this.responseVariablesNotAnalyzed = new int[indicesNotAnalyzed.size()];
+        for (int i = 0; i < indicesNotAnalyzed.size(); i++) {
+            responseVariablesNotAnalyzed[i] = indicesNotAnalyzed.get(i);
+        }
         
         // Set penalties using the gs-factor. This is sort of a hack but should be OK for now.
         penaltySuppressed            = super.getSuppressionFactor();
         penaltyInfrequentResponse    = super.getGeneralizationFactor();
         penaltyNoMajorityResponse    = super.getGeneralizationSuppressionFactor();
         
-        // Store minimal size of equivalence classes
         if (config.isPrivacyModelSpecified(EDDifferentialPrivacy.class)) {
+            // Store minimal size of equivalence classes
             EDDifferentialPrivacy dpCriterion = config.getPrivacyModel(EDDifferentialPrivacy.class);
             k = (double)dpCriterion.getMinimalClassSize();
         }
