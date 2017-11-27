@@ -179,7 +179,7 @@ public class MetricSDClassification extends AbstractMetricSingleDimensional {
     public ILScore getScore(final Transformation node, final HashGroupify groupify) {
         
         // Prepare
-        Map<RecordWrapper, Map<Integer, Integer>> featuresToClassToCount = new HashMap<>();
+        Map<RecordWrapper, Map<RecordWrapper, Integer>> featuresToClassToCount = new HashMap<>();
 
         // Setup data structures
         HashGroupifyEntry m = groupify.getFirstEquivalenceClass();
@@ -213,15 +213,15 @@ public class MetricSDClassification extends AbstractMetricSingleDimensional {
             if (featuresSuppressed) continue;
 
             RecordWrapper featuresWrapped = new RecordWrapper(features);
+            RecordWrapper responseValuesWrapped = new RecordWrapper(responseValues);
 
-            // TODO properly handle several response values
-            Map<Integer, Integer> classToCount = featuresToClassToCount.get(featuresWrapped);
+            Map<RecordWrapper, Integer> classToCount = featuresToClassToCount.get(featuresWrapped);
             if (classToCount == null) {
                 classToCount = new HashMap<>();
-                classToCount.put(responseValues[0], m.count);
+                classToCount.put(responseValuesWrapped, m.count);
             } else {
-                int classCount = classToCount.containsKey(responseValues[0]) ? classToCount.get(responseValues[0]) + m.count : m.count;
-                classToCount.put(responseValues[0], classCount);
+                int classCount = classToCount.containsKey(responseValuesWrapped) ? classToCount.get(responseValuesWrapped) + m.count : m.count;
+                classToCount.put(responseValuesWrapped, classCount);
             }
             featuresToClassToCount.put(featuresWrapped, classToCount);
             
@@ -230,7 +230,7 @@ public class MetricSDClassification extends AbstractMetricSingleDimensional {
 
         // Calculate score
         double score = 0d;
-        for (Map<Integer, Integer> classToCount : featuresToClassToCount.values()) {
+        for (Map<RecordWrapper, Integer> classToCount : featuresToClassToCount.values()) {
             int maxCount = 0;
             for (int count : classToCount.values()) {
                 maxCount = Math.max(maxCount, count);
