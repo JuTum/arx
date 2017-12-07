@@ -186,21 +186,22 @@ public class MetricSDClassification extends AbstractMetricSingleDimensional {
         while (m != null) {
             m.read();
             
-            if (!m.isNotOutlier) continue;
+            if (!m.isNotOutlier) {
+                m = m.nextOrdered;
+                continue;
+            }
             
             int[] features = new int[rootValues.length - responseVariablesNotAnalyzed.length];
             int featuresIndex = 0;
             int[] responseValues = new int[responseVariablesNotAnalyzed.length];
             int responseIndex = 0;
-            int nextResponseIndex = 0;
             boolean featuresSuppressed = true;
             
             for (int i=0; i<rootValues.length; ++i) {
                 int value = m.next();
-                if (i == responseVariablesNotAnalyzed[nextResponseIndex]) {
+                if (responseIndex < responseVariablesNotAnalyzed.length && i == responseVariablesNotAnalyzed[responseIndex]) {
                     responseValues[responseIndex] = value;
                     responseIndex++;
-                    nextResponseIndex++;
                 } else {
                     features[featuresIndex] = value;
                     featuresIndex++;
@@ -210,7 +211,10 @@ public class MetricSDClassification extends AbstractMetricSingleDimensional {
                 }
             }
             
-            if (featuresSuppressed) continue;
+            if (featuresSuppressed) {
+                m = m.nextOrdered;
+                continue;
+            }
 
             RecordWrapper featuresWrapped = new RecordWrapper(features);
             RecordWrapper responseValuesWrapped = new RecordWrapper(responseValues);
@@ -396,6 +400,7 @@ public class MetricSDClassification extends AbstractMetricSingleDimensional {
             if (index != -1) {
                 indices.add(index);
             } else {
+                index = input.getIndexOf(variable);
                 indicesNotAnalyzed.add(index);
             }
         }
