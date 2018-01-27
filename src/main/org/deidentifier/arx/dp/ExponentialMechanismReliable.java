@@ -37,15 +37,18 @@ public class ExponentialMechanismReliable<T> extends AbstractExponentialMechanis
 
     /** The cumulative distribution scaled so that it consists of natural numbers */
     private BigInteger[]                            cumulativeDistribution;
+    
+    /** The probability function if it should be provided, null otherwise */
+    private Map<T,BigFraction>                      pmf;
 
     /** The random generator */
-    private Random                                  random;
+    private final Random                            random;
 
     /** The values to sample from */
     private T[]                                     values;
 
     /** The base having the form of a fraction n/d */
-    BigFraction                                     base;
+    private final BigFraction                       base;
 
     /** A cache mapping an exponent e to n^e used to increase performance */
     private Map<Integer, BigInteger>                numeratorCache;
@@ -88,7 +91,12 @@ public class ExponentialMechanismReliable<T> extends AbstractExponentialMechanis
         this.denominatorCache = new HashMap<Integer,BigInteger>();
         this.productCache = new HashMap<Pair<Integer,Integer>, BigInteger>();
     }
-    
+
+    @Override
+    public Map<T,BigFraction> getPMF() {
+        return pmf;
+    }
+
     @Override
     public T sample() {
         
@@ -176,6 +184,29 @@ public class ExponentialMechanismReliable<T> extends AbstractExponentialMechanis
             
             // Accumulate
             cumulativeDistribution[i] = i == 0 ? nextElement : nextElement.add(cumulativeDistribution[i-1]);
+        }
+        
+        // Compute probability mass function if required
+        if (providePMF) {
+            BigInteger[] distributionInteger = new BigInteger[values.length];
+            for (int i = 0; i < values.length; i++) {
+
+                int numeratorExponent = exponents[i];
+                int denominatorExponent = maxExponent - numeratorExponent;
+
+                Pair<Integer,Integer> exponentPair = new Pair<Integer,Integer>(numeratorExponent, denominatorExponent);
+
+                BigInteger nextElement = productCache.get(exponentPair);
+                distributionInteger[i] = nextElement;
+            }
+
+            this.pmf = new HashMap<T,BigFraction>();
+            BigInteger sum = cumulativeDistribution[cumulativeDistribution.length-1];
+            for (int i = 0; i < distributionInteger.length; ++i) {
+                this.pmf.put(values[i], new BigFraction(distributionInteger[i], sum));
+            }
+        } else {
+            this.pmf = null;
         }
     }
 

@@ -29,6 +29,7 @@ import java.util.Random;
 
 import org.apache.commons.math3.analysis.function.Exp;
 import org.apache.commons.math3.distribution.EnumeratedDistribution;
+import org.apache.commons.math3.fraction.BigFraction;
 import org.apache.commons.math3.random.AbstractRandomGenerator;
 import org.apache.commons.math3.util.Pair;
 
@@ -126,6 +127,22 @@ public class ExponentialMechanism<T> extends AbstractExponentialMechanism<T, Dou
         this.mc = new MathContext(precision, RoundingMode.HALF_UP);
         this.epsilon = epsilon;
         this.random = deterministic ? new DeterministicRandomGenerator() : new SecureRandomGenerator();
+    }
+    
+    @Override
+    public Map<T,BigFraction> getPMF() {
+        
+        if (!providePMF) {
+            return null;
+        }
+        
+        Map<T,BigFraction> pmf = new HashMap<T,BigFraction>();
+        for (Pair<T, Double> element : distribution.getPmf()) {
+            T value = element.getFirst();
+            Double probability = element.getSecond();
+            pmf.put(value,  new BigFraction(probability));
+        }
+        return pmf;
     }
     
     @Override

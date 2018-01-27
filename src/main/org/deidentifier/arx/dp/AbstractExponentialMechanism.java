@@ -16,12 +16,25 @@
  */
 package org.deidentifier.arx.dp;
 
+import java.util.Map;
+
+import org.apache.commons.math3.fraction.BigFraction;
+
 /**
  * Abstract base class for implementations of the exponential mechanism
  * 
  * @author Raffael Bild
  */
 public abstract class AbstractExponentialMechanism<T,S> {
+    
+    /** True iff the probability mass function should be accessible */
+    public static boolean providePMF = false;
+    
+    /**
+     * Returns the probability mass function or null if it should not be accessible 
+     * @return
+     */
+    public abstract Map<T,BigFraction> getPMF();
     
     /**
      * Returns a random sampled value

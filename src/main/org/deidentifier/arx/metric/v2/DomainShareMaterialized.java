@@ -38,7 +38,7 @@ import com.carrotsearch.hppc.ObjectIntOpenHashMap;
 public class DomainShareMaterialized implements DomainShare {
 
     /** SVUID. */
-    private static final long                            serialVersionUID = -8981924690395236648L;
+    private static final long                            serialVersionUID   = -8981924690395236648L;
 
     /** The value representing a non-existent entry. */
     private static final double                          NOT_AVAILABLE    = -Double.MAX_VALUE;
