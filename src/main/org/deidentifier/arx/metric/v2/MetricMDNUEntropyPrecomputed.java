@@ -146,18 +146,11 @@ public class MetricMDNUEntropyPrecomputed extends AbstractMetricMultiDimensional
         // Prepare
         int[][][] cardinalities = this.cardinalities.getCardinalities();
         double[] result = new double[hierarchies.length];
-        double gFactor = super.getGeneralizationFactor();
 
         // For each column column  /JK  column = attribute of dataset
         for (int column = 0; column < hierarchies.length; column++) {
 
         	final int transformation = node.getGeneralization()[column];
-        	
-            if (transformation == maxLevels[column]) { //JK attribute is suppressed completely?
-                // The column is suppressed by generalization
-                continue;            
-            }
-            
             double value = 0d;
             final int[][] cardinality = cardinalities[column];
             final int[][] hierarchy = hierarchies[column];
@@ -167,10 +160,10 @@ public class MetricMDNUEntropyPrecomputed extends AbstractMetricMultiDimensional
                final double a = cardinality[in][0];
                final double b = cardinality[out][transformation];
                if (a != 0d) {
-                 value += a / b;
+                 value += a * a / b;
                }               
             }
-           result[column] = value * gFactor;
+           result[column] = value;
         }
         double score = 0d;
         for(int i = 0; i<result.length; i++) {
@@ -179,7 +172,7 @@ public class MetricMDNUEntropyPrecomputed extends AbstractMetricMultiDimensional
         //JK all non suppressed attributes checked
         
         // Compute loss induced by suppression
-        int[] numSuppressed = new int[node.getGeneralization().length]; //JK saves number of suppressed values for each column?
+        int[] numSuppressed = new int[node.getGeneralization().length]; //JK saves number of suppressed values for each column
         final IntIntOpenHashMap[] original = new IntIntOpenHashMap[node.getGeneralization().length];
         for (int i = 0; i < original.length; i++) {
             original[i] = new IntIntOpenHashMap();
@@ -216,7 +209,7 @@ public class MetricMDNUEntropyPrecomputed extends AbstractMetricMultiDimensional
         }
         // Adjust sensitivity and multiply with -1 so that higher values are better
         //score *= -1d / ((double)rows * (double)dimensionsGeneralized); //JK  "-1d" remove, because log is no longer part of score function?
-        score /= (k==1) ? 3d : (double)(3*k - 2d); //JK sensitivity updated 
+        score /= (double)(original.length) * ((k==1) ? 3d : (double)(3*k - 2d)); //JK sensitivity updated 
         
         // Return
         return new ILScoreDouble(score);
@@ -292,11 +285,6 @@ public class MetricMDNUEntropyPrecomputed extends AbstractMetricMultiDimensional
         for (int column = 0; column < hierarchies.length; column++) {
 
             final int transformation = node.getGeneralization()[column];
-            if (transformation == maxLevels[column]) {
-                // The column is suppressed by generalization
-                continue;
-            }
-            // Check for cached value
             double value = cache[column][transformation];
             if (value == NOT_AVAILABLE) {
                 value = 0d;
