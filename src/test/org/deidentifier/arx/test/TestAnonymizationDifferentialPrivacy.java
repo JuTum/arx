@@ -23,6 +23,7 @@ import java.util.Collection;
 import org.deidentifier.arx.ARXConfiguration;
 import org.deidentifier.arx.criteria.EDDifferentialPrivacy;
 import org.deidentifier.arx.metric.Metric;
+import org.deidentifier.arx.metric.v2.MetricMDNUEntropyPrecomputed;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
@@ -42,21 +43,13 @@ public class TestAnonymizationDifferentialPrivacy extends AbstractAnonymizationT
      */
     @Parameters(name = "{index}:[{0}]")
     public static Collection<Object[]> cases() {
+        MetricMDNUEntropyPrecomputed.USE_NEW_SCORE_FUNCTION = true;
         return Arrays.asList(new Object[][] {
-            { new ARXAnonymizationTestCase(createDataDependentConfiguration(Metric.createEntropyMetric(), 2d, 1d, 1E-5d, 10, false), "./data/adult.csv", 0.6684978203609981, new int[] { 1, 4, 0, 1, 2, 2, 1, 1, 0 }, false) },
-            { new ARXAnonymizationTestCase(createDataDependentConfiguration(Metric.createEntropyMetric(), 2d, 1d, 1E-5d, 10, false), "./data/cup.csv", 0.3942298849567326, new int[] { 4, 3, 0, 1, 0, 3, 3, 3 }, false) },
-            { new ARXAnonymizationTestCase(createDataDependentConfiguration(Metric.createEntropyMetric(), 2d, 1d, 1E-5d, 10, false), "./data/fars.csv", 0.4331241264918216, new int[] { 4, 1, 2, 2, 0, 1, 1, 1 }, false) },
-            { new ARXAnonymizationTestCase(createDataDependentConfiguration(Metric.createEntropyMetric(), 2d, 1d, 1E-5d, 10, false), "./data/atus.csv", 0.4798380763190961, new int[] { 1, 4, 0, 1, 1, 1, 1, 1, 1 }, false) },
-            { new ARXAnonymizationTestCase(createDataDependentConfiguration(Metric.createEntropyMetric(), 2d, 1d, 1E-5d, 10, false), "./data/ihis.csv", 0.43355679295479355, new int[] { 4, 1, 1, 1, 3, 1, 0, 0, 0 }, false) },
-            { new ARXAnonymizationTestCase(createDataDependentConfiguration(Metric.createEntropyMetric(), 1d, 0.1d, 1E-5d, 10, false), "./data/adult.csv", 0.7461734885329702, new int[] { 1, 3, 1, 1, 3, 2, 1, 2, 1 }, false) },
-            { new ARXAnonymizationTestCase(createDataDependentConfiguration(Metric.createEntropyMetric(), 1d, 0.1d, 1E-5d, 10, false), "./data/cup.csv", 0.7991394919170811, new int[] { 5, 4, 0, 1, 0, 3, 4, 4 }, false) },
-            { new ARXAnonymizationTestCase(createDataDependentConfiguration(Metric.createEntropyMetric(), 1d, 0.1d, 1E-5d, 10, false), "./data/fars.csv", 0.6438315905368939, new int[] { 4, 2, 2, 3, 1, 1, 2, 2 }, false) },
-            { new ARXAnonymizationTestCase(createDataDependentConfiguration(Metric.createEntropyMetric(), 2d, 1d, 1E-5d, 100, false), "./data/adult.csv", 0.4766902031326508, new int[] { 0, 3, 0, 1, 2, 1, 2, 1, 1 }, false) },
-            { new ARXAnonymizationTestCase(createDataDependentConfiguration(Metric.createEntropyMetric(), 2d, 1d, 1E-5d, 100, false), "./data/cup.csv", 0.5078124514907367, new int[] { 4, 4, 0, 1, 0, 3, 3, 3 }, false) },
-            { new ARXAnonymizationTestCase(createDataDependentConfiguration(Metric.createEntropyMetric(), 2d, 1d, 1E-5d, 100, false), "./data/fars.csv", 0.43437306324915353, new int[] { 4, 1, 2, 2, 0, 0, 2, 1 }, false) },
-            { new ARXAnonymizationTestCase(createDataDependentConfiguration(Metric.createEntropyMetric(), 1d, 0.1d, 1E-5d, 100, false), "./data/adult.csv", 0.625470682519847, new int[] { 0, 3, 0, 1, 3, 1, 1, 2, 0 }, false) },
-            { new ARXAnonymizationTestCase(createDataDependentConfiguration(Metric.createEntropyMetric(), 1d, 0.1d, 1E-5d, 100, false), "./data/cup.csv", 0.5136887308449694, new int[] { 4, 3, 1, 1, 0, 3, 4, 3 }, false) },
-            { new ARXAnonymizationTestCase(createDataDependentConfiguration(Metric.createEntropyMetric(), 1d, 0.1d, 1E-5d, 100, false), "./data/fars.csv", 0.44717106212794655, new int[] { 4, 1, 2, 2, 0, 0, 2, 0 }, false) },
+            { new ARXAnonymizationTestCase(createDataDependentConfiguration(Metric.createEntropyMetric(), 1d, 0.1d, 1E-5d, 300, false), "./data/adult.csv", 0.36633689661736646, new int[] { 1, 4, 0, 1, 2, 2, 1, 1, 0 }, false) },
+            { new ARXAnonymizationTestCase(createDataDependentConfiguration(Metric.createEntropyMetric(), 1d, 0.1d, 1E-5d, 300, false), "./data/cup.csv", 0.3942298849567326, new int[] { 4, 3, 0, 1, 0, 3, 3, 3 }, false) },
+            { new ARXAnonymizationTestCase(createDataDependentConfiguration(Metric.createEntropyMetric(), 1d, 0.1d, 1E-6d, 300, false), "./data/fars.csv", 0.4331241264918216, new int[] { 4, 1, 2, 2, 0, 1, 1, 1 }, false) },
+            { new ARXAnonymizationTestCase(createDataDependentConfiguration(Metric.createEntropyMetric(), 1d, 0.1d, 1E-6d, 300, false), "./data/atus.csv", 0.4798380763190961, new int[] { 1, 4, 0, 1, 1, 1, 1, 1, 1 }, false) },
+            { new ARXAnonymizationTestCase(createDataDependentConfiguration(Metric.createEntropyMetric(), 1d, 0.1d, 1E-7d, 300, false), "./data/ihis.csv", 0.43355679295479355, new int[] { 4, 1, 1, 1, 3, 1, 0, 0, 0 }, false) },
         });
     }
 

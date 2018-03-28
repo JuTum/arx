@@ -50,15 +50,17 @@ import com.carrotsearch.hppc.IntIntOpenHashMap;
  * @author Florian Kohlmayer
  */
 public class MetricMDNUEntropyPrecomputed extends AbstractMetricMultiDimensional {
+    
+    public static boolean       USE_NEW_SCORE_FUNCTION = true;
 
     /** SVUID. */
-    private static final long   serialVersionUID = 8053878428909814308L;
+    private static final long   serialVersionUID       = 8053878428909814308L;
 
     /** Not available in the cache. */
-    private static final double NOT_AVAILABLE    = Double.POSITIVE_INFINITY;
+    private static final double NOT_AVAILABLE          = Double.POSITIVE_INFINITY;
 
     /** Log 2. */
-    private static final double LOG2             = Math.log(2);
+    private static final double LOG2                   = Math.log(2);
 
     /**
      * Computes log 2.
@@ -142,6 +144,18 @@ public class MetricMDNUEntropyPrecomputed extends AbstractMetricMultiDimensional
     
     @Override
     public ILScoreDouble getScore(final Transformation node, final HashGroupify groupify) {
+        if (USE_NEW_SCORE_FUNCTION) {
+            return getScoreNew(node, groupify);
+        }
+        return getScoreOld(node, groupify);
+    }
+    
+    public ILScoreDouble getScoreOld(final Transformation node, final HashGroupify groupify) {
+        // TODO
+        throw new RuntimeException("Not yet implemented");
+    }
+    
+    public ILScoreDouble getScoreNew(final Transformation node, final HashGroupify groupify) {
    //JK new calculation 
         // Prepare
         int[][][] cardinalities = this.cardinalities.getCardinalities();
